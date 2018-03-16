@@ -1,0 +1,333 @@
+@@ -0,0 +1,332 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package mar.tur;
+import com.sun.corba.se.impl.orbutil.graph.Graph;
+import java.util.*;
+import java.io.*;
+import static java.lang.System.exit;
+import java.util.Scanner;
+
+/**
+ *
+ * @author Pasaoglu
+ */
+
+public class MARTUR {
+    
+    static int INFINITY = 9999;
+    static int MAX = 82;
+    public final static double AVERAGE_RADIUS_OF_EARTH_KM = 6371;
+    static int rakım1,rakım2,dur;
+    static List<Integer> sehir[] = new LinkedList[81];
+    static double uzaklık;
+    
+    
+        static Scanner girdi;
+    
+    public static void main(String[] args) throws IOException {
+        // TODO code application logic here
+        
+        girdi = new Scanner(System.in);
+        
+        int a=0;
+        String[] str = null;
+        File f = new File("komsuluk.txt");
+        BufferedReader reader = new BufferedReader(new FileReader(f));
+        
+        
+        for(int i=0;i<81;i++)    
+            sehir[i] = new LinkedList<>();
+        
+        
+        for(int i=0;i<81;i++){    
+        
+             String s = reader.readLine();
+             str = s.split(",");
+             
+             for(int j=0;j<str.length;j++){
+                a = Integer.parseInt(str[j]);
+                sehir[i].add(a);
+             }
+        }
+        
+        System.out.println("Gidilecek şehrin plakası :");
+        int plaka1 = girdi.nextInt();
+        System.out.println("Gidilecek 2.şehrin plakası :");
+        int plaka2 = girdi.nextInt();
+        
+        double uzaklık = Mesafe(plaka1,plaka2);
+        
+        double[][] matrix = new double[81][81];
+        
+        int[] Uzaklık = new int[81];
+        double toplamUzaklık=0,yol=0;
+        double enKarlı=0, maliyet=0,maliyet2=0,maliyet50=0;
+        int[] rota = new int[81];
+        int k=0,enKarlıYolcuSayısı=0;
+        
+        
+        double kusUcusu = Mesafe(plaka1,plaka2);
+        
+        for(int l=5;l<51;l++){
+                
+            
+            
+            matrix = matris(l);
+            
+            System.out.print(l+": kişi ile şu yollardan gidebilir   ");    
+            Uzaklık = dijkstra(matrix,81,(plaka1-1),(plaka2-1));
+            
+            
+            for(int i=0;i<81;i++){   
+                if(Uzaklık[i] == 0)
+                    continue;   
+                rota[k] = Uzaklık[i];
+                k++;
+            }
+
+            for(int i=0;i<k;i++){
+                if(i+1 == k)
+                    break;    
+                toplamUzaklık+= Mesafe(rota[i],rota[i+1]);
+            }
+            System.out.println("   "+toplamUzaklık);
+            
+            if(toplamUzaklık > 200 && toplamUzaklık == kusUcusu){
+                toplamUzaklık = 0;
+                continue;
+            }
+            
+            maliyet = (l*100) - (toplamUzaklık*10);
+            
+            
+            if(maliyet > enKarlı){
+                enKarlı = maliyet;
+                yol = toplamUzaklık;
+                enKarlıYolcuSayısı = l;
+                
+            }
+            
+            k=0;
+            toplamUzaklık = 0;
+       
+        }
+        
+                matrix = matris(enKarlıYolcuSayısı);
+                
+           if(enKarlı == 0){
+                System.out.println("\nYolculuktan zararlı çıkarsın,kar yok !!!\n\n\n\n\n\n");
+                exit(0);
+            }
+                
+                if(yol %2 ==0){
+                    maliyet50 = ( (int)(yol*10)+((10*((int)yol))/2) ) / enKarlıYolcuSayısı ;
+                    
+                }
+                
+                else{
+                    maliyet50 = ( ((int)(yol+1)*10 )+((10*((int)yol+1))/2)) / enKarlıYolcuSayısı;
+                    }
+               
+           
+            System.out.print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEN MALİYETSİZ GİDİLECEK KOMŞU ");
+            dijkstra(matrix,81,(plaka1-1),(plaka2-1));
+            
+            System.out.println("\n2 şehir arası yol: "+yol+"km  \nEn fazla elde edilen kar : "+enKarlı+"\nEn karlı ->"+enKarlıYolcuSayısı+" yolcuyla seyahat yapılmalı");
+            System.out.println("%50 kar için kişi başı-> "+maliyet50+" tl ücret alınmalı\n\n\n\n\n\n\n\n\n\n");
+        
+    }
+
+    public static double[][] matris(int l) throws IOException{
+        
+        double[][] matrix = new double[81][81];
+        
+        
+        for(int i=1;i<82;i++){
+            for(int j=1;j<sehir[i-1].size();j++){
+
+                uzaklık = Mesafe(i,sehir[i-1].get(j));
+                if(giderMi(uzaklık,l)){
+                    matrix[i-1][sehir[i-1].get(j)-1] = uzaklık;
+                }
+                else
+                    matrix[i-1][sehir[i-1].get(j)-1] = 0;
+                    
+                
+            }
+        }
+        
+        
+        return matrix;
+    }
+    
+    
+    public static double Mesafe(int plaka1,int plaka2) throws IOException{
+        
+        File fa = new File("lat long.txt");
+        BufferedReader r = new BufferedReader(new FileReader(fa));
+        
+        String s="";
+        String[] str = null;
+        String[] st = null;
+        double lat,lat2,longg,longg2;
+        
+        
+        
+        for(int i=0;i<plaka1;i++){
+            s = r.readLine();
+        }
+        str = s.split(",");
+        
+        lat = Double.parseDouble(str[0]); longg = Double.parseDouble(str[1]); 
+        rakım1 = Integer.parseInt(str[3]);
+        
+        
+        r = new BufferedReader(new FileReader(fa));
+        
+        
+        for(int i=0;i<plaka2;i++){
+            s = r.readLine();
+        }
+        
+        
+        st = s.split(",");
+        lat2 = Double.parseDouble(st[0]); longg2 = Double.parseDouble(st[1]); 
+        rakım2 = Integer.parseInt(st[3]);
+        /*
+        System.out.println("Uzaklık "+calculateDistanceInKilometer(lat,longg,lat2,longg2));
+        System.out.println("Rakım1: "+rakım1);
+        System.out.println("Rakım2: "+rakım2);
+   */ 
+        
+        return calculateDistanceInKilometer(lat, longg, lat2, longg2);
+    }
+    
+    
+    
+    
+//Kaynak kod
+    //https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+    public static double calculateDistanceInKilometer(double userLat, double userLng,double venueLat, double venueLng) {
+
+    double latDistance = Math.toRadians(userLat - venueLat);
+    double lngDistance = Math.toRadians(userLng - venueLng);
+
+    double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+      + Math.cos(Math.toRadians(userLat)) * Math.cos(Math.toRadians(venueLat))
+      * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+
+    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return ((AVERAGE_RADIUS_OF_EARTH_KM * c));
+    }
+    
+    
+    public static boolean giderMi(double uzaklık,int yolcu_sayısı){
+        
+        int rakım = Math.abs(rakım1-rakım2)+50;
+        
+        double derece = Math.toDegrees(Math.atan(Math.sin((double)rakım/(double)uzaklık)));
+        
+        derece = Math.abs((int)derece);
+      
+        if(derece+yolcu_sayısı <= 80)
+            return true;
+        else 
+            return false;
+    }
+
+    
+
+ 
+
+//https://www.thecrazyprogrammer.com/2014/03/dijkstra-algorithm-for-finding-shortest-path-of-a-graph.html
+ 
+public static int[] dijkstra(double[][] G, int n ,int startnode,int finalnode)
+{
+ 
+    double[][] cost = new double[MAX][MAX];
+    double[] distance = new double[MAX];
+    double[] pred = new double[MAX];
+    double[] visited = new double[MAX];
+    
+    int count,nextnode=0,i,j;
+    double mindistance;
+    //pred[] stores the predecessor of each node
+    //count gives the number of nodes seen so far
+    //create the cost matrix
+    for(i=0;i<n;i++)
+        for(j=0;j<n;j++)
+            if(G[i][j]==0)
+                cost[i][j]=INFINITY;
+            else
+                cost[i][j]=G[i][j];
+    
+    //initialize pred[],distance[] and visited[]
+    for(i=0;i<n;i++)
+    {
+        distance[i]=cost[startnode][i];
+        pred[i]=startnode;
+        visited[i]=0;
+    }
+    
+    distance[startnode]=0;
+    visited[startnode]=1;
+    count=1;
+    
+    while(count<n-1)
+    {
+        mindistance=INFINITY;
+        
+        //nextnode gives the node at minimum distance
+        for(i=0;i<n;i++)
+            if(distance[i]<mindistance && visited[i] == 0)
+            {
+                mindistance=distance[i];
+                nextnode=i;
+            }
+            
+            //check if a better path exists through nextnode            
+            visited[nextnode]=1;
+            for(i=0;i<n;i++)
+                if(visited[i] == 0)
+                    if(mindistance+cost[nextnode][i]<distance[i])
+                    {
+                        distance[i]=mindistance+cost[nextnode][i];
+                        pred[i]=nextnode;
+                    }
+        count++;
+    }
+    
+    int[] toplamUzaklık = new int[81];
+    int k=0;
+    
+    
+    for(i=0;i<10;i++)
+        toplamUzaklık[i]=0;
+    //print the path and distance of each node
+    for(i=0;i<n;i++)
+        if(i!=startnode)
+        {
+            if(finalnode == i){
+            System.out.print("ŞEHİRLER= "+(i+1));
+            toplamUzaklık[k] = i+1;
+            k++;
+            j=i;
+            do
+            {
+                j=(int)pred[j];
+                toplamUzaklık[k] = j+1;
+                k++;
+                System.out.print("<-"+(j+1));
+            }while(j!=startnode);
+    }
+        }
+    
+    return toplamUzaklık;
+}
+    
+}
